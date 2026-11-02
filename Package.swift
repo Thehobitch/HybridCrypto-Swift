@@ -18,6 +18,11 @@ let package = Package(
         .target(
             name: "HybridCrypto",
             path: "Sources/HybridCrypto"
+        ),
+        .testTarget(
+            name: "HybridCryptoTests",
+            dependencies: ["HybridCrypto"],
+            path: "Tests/HybridCryptoTests"
         )
     ]
 )
