@@ -21,18 +21,34 @@ let signature = try HybridCrypto.sign(message: message, classicalKey: ecKey, pqK
 let valid = try HybridCrypto.verify(signature, message: message,
                                     classicalPublic: ecKey.publicKey,
                                     pqPublic: pqKey.publicKey)
+
+// Serialization
+let encoded = signature.encoded()
+let decoded = try HybridSignature.decoded(from: encoded)
+
+// Local driver path
+let driver = LocalCryptoDriver()
+let handle = try driver.generateHybridKeyPair()
+let driverSig = try driver.hybridSign(identifier: handle.identifier, message: message)
 ```
 
 ## Driver Path
-Optional `CryptoDriver` protocol for HSM / remote backends. `NShieldRESTDriver` is a stub.
+Optional `CryptoDriver` protocol for HSM / remote backends.  
+`LocalCryptoDriver` is a full in-process implementation.  
+`NShieldRESTDriver` remains a stub.
+
+## Testing
+```bash
+swift test
+```
 
 ## License
-CC-BY-4.0 (as requested in source). Consider MIT or Apache-2.0 for production use.
+MIT License. See [LICENSE](LICENSE).
 
 ## Status
-Initial implementation. Contributions welcome for:
-- Local driver implementation
-- Serialization
-- Tests
-- Additional hybrid combinations
+Core local path, local driver, basic serialization, and tests are in place.  
+Contributions welcome for:
 - Real nShield / HSM backend
+- Additional hybrid combinations
+- Key storage / export helpers
+- More comprehensive test vectors
