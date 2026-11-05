@@ -38,36 +38,74 @@ extension HybridKeyHandle {
 }
 
 /// Utility for encoding public keys in a simple length-prefixed format.
+/// Format: [UInt32 EC length][EC bytes][UInt32 PQ length][PQ bytes].
+/// Lengths are big-endian. This framing does not identify the algorithm.
 public enum KeyExport {
-    public static func encodePublic(classical: Data, pq: Data) -> Data {
-        var data = Data()
-        func append(_ value: Data) {
-            var len = UInt32(value.count).bigEndian
-            withUnsafeBytes(of: &len) { data.append(contentsOf: $0) }
-            data.append(value)
+    /// Throws if either key is empty or exceeds UInt32.max.
+    public static func encodePublic(
+        classical: Data,
+        pq: Data
+    ) throws -> Data {
+        guard !classical.isEmpty,
+              !pq.isEmpty,
+              let ecLength = UInt32(exactly: classical.count),
+              let pqLength = UInt32(exactly: pq.count) else {
+            throw CryptoError.encodingFailed
         }
-        append(classical)
-        append(pq)
-        return data
+
+        var result = Data()
+
+        func append(_ value: Data, length: UInt32) {
+            var bigEndianLength = length.bigEndian
+            withUnsafeBytes(of: &bigEndianLength) {
+                result.append(contentsOf: $0)
+            }
+            result.append(value)
+        }
+
+        append(classical, length: ecLength)
+        append(pq, length: pqLength)
+        return result
     }
 
-    public static func decodePublic(from data: Data) throws -> (classical: Data, pq: Data) {
-        var offset = 0
-        func read() throws -> Data {
-            guard offset + 4 <= data.count else {
+    /// Checks framing only; key validity requires CryptoKit parsing.
+    public static func decodePublic(
+        from data: Data
+    ) throws -> (classical: Data, pq: Data) {
+        try data.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) in
+            var offset = 0
+
+            func read() throws -> Data {
+                guard bytes.count - offset >= 4 else {
+                    throw CryptoError.encodingFailed
+                }
+
+                // Byte-wise decoding avoids alignment assumptions.
+                var encodedLength: UInt32 = 0
+                for _ in 0..<4 {
+                    encodedLength = (encodedLength << 8) | UInt32(bytes[offset])
+                    offset += 1
+                }
+
+                let length = Int(encodedLength)
+                guard length > 0, bytes.count - offset >= length else {
+                    throw CryptoError.encodingFailed
+                }
+
+                let slice = Data(bytes[offset..<(offset + length)])
+                offset += length
+                return slice
+            }
+
+            let classical = try read()
+            let pq = try read()
+
+            // Ensure no trailing bytes remain.
+            guard offset == bytes.count else {
                 throw CryptoError.encodingFailed
             }
-            let len = data.withUnsafeBytes { $0.load(fromByteOffset: offset, as: UInt32.self).bigEndian }
-            offset += 4
-            guard offset + Int(len) <= data.count else {
-                throw CryptoError.encodingFailed
-            }
-            let slice = data.subdata(in: offset..<(offset + Int(len)))
-            offset += Int(len)
-            return slice
+
+            return (classical, pq)
         }
-        let classical = try read()
-        let pq = try read()
-        return (classical, pq)
     }
 }
