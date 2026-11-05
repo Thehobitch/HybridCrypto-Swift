@@ -84,7 +84,7 @@ final class HybridCryptoTests: XCTestCase {
             pqPublic: pq.publicKey.rawRepresentation
         )
 
-        let encoded = KeyExport.encodePublic(classical: handle.classicalPublic, pq: handle.pqPublic)
+        let encoded = try KeyExport.encodePublic(classical: handle.classicalPublic, pq: handle.pqPublic)
         let (decodedClassical, decodedPQ) = try KeyExport.decodePublic(from: encoded)
         XCTAssertEqual(decodedClassical, handle.classicalPublic)
         XCTAssertEqual(decodedPQ, handle.pqPublic)
@@ -97,5 +97,10 @@ final class HybridCryptoTests: XCTestCase {
         XCTAssertEqual(reconstructed.pqPublic, handle.pqPublic)
 
         XCTAssertFalse(handle.publicDescription.isEmpty)
+    }
+
+    func testKeyExportRejectsEmpty() {
+        XCTAssertThrowsError(try KeyExport.encodePublic(classical: Data(), pq: Data([0x01])))
+        XCTAssertThrowsError(try KeyExport.encodePublic(classical: Data([0x01]), pq: Data()))
     }
 }
