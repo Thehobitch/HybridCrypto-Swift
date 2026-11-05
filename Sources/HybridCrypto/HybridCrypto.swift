@@ -28,6 +28,14 @@ import CryptoKit
 ///    - No configuration ceremony for common use cases.
 ///    - Code should be readable in a single pass.
 
+// MARK: - Errors
+public enum CryptoError: Error, Equatable {
+    case keyNotFound
+    case invalidSignature
+    case unsupportedAlgorithm
+    case encodingFailed
+}
+
 // MARK: - Core Types (kept minimal)
 public struct HybridSignature {
     public let pqSignature: Data

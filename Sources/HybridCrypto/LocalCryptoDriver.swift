@@ -25,7 +25,7 @@ public final class LocalCryptoDriver: CryptoDriver {
 
     public func hybridSign(identifier: String, message: Data) throws -> HybridSignature {
         guard let pair = keys[identifier] else {
-            throw CryptoDriverError.backendNotImplemented // or a dedicated error
+            throw CryptoError.keyNotFound
         }
         return try HybridCrypto.sign(message: message, classicalKey: pair.classical, pqKey: pair.pq)
     }

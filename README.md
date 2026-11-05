@@ -30,12 +30,21 @@ let decoded = try HybridSignature.decoded(from: encoded)
 let driver = LocalCryptoDriver()
 let handle = try driver.generateHybridKeyPair()
 let driverSig = try driver.hybridSign(identifier: handle.identifier, message: message)
+
+// Key helpers
+let publicEncoded = KeyExport.encodePublic(classical: handle.classicalPublic, pq: handle.pqPublic)
+let description = handle.publicDescription
 ```
 
 ## Driver Path
 Optional `CryptoDriver` protocol for HSM / remote backends.  
 `LocalCryptoDriver` is a full in-process implementation.  
 `NShieldRESTDriver` remains a stub.
+
+## Key Helpers
+- `HybridKeyHandle.concatenatedPublic` and `fromConcatenatedPublic`
+- `KeyExport.encodePublic` / `decodePublic` for length-prefixed public key bundles
+- Clearer errors via `CryptoError` (e.g. `keyNotFound`)
 
 ## Testing
 ```bash
@@ -46,9 +55,9 @@ swift test
 MIT License. See [LICENSE](LICENSE).
 
 ## Status
-Core local path, local driver, basic serialization, and tests are in place.  
+Core local path, local driver, basic serialization, key export helpers, and expanded tests are in place.  
 Contributions welcome for:
 - Real nShield / HSM backend
 - Additional hybrid combinations
-- Key storage / export helpers
+- Persistent key storage
 - More comprehensive test vectors
